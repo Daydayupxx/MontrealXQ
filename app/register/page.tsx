@@ -2,6 +2,7 @@
 
 import { useState, FormEvent, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 
 // 表单类型
 interface RegisterForm {
@@ -23,7 +24,13 @@ export default function Register() {
 
   const [error, setError] = useState<string>("");
 
-  // 表单验证函数（返回错误字符串 或 null）
+  // 初始化 Supabase 客户端
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  // 表单验证函数
   const validateForm = (): string | null => {
     const { username, email, password, confirmPassword } = form;
 
@@ -48,12 +55,30 @@ export default function Register() {
   };
 
   // 提交处理
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
+      return;
+    }
+
+    setError("");
+
+    // 调用 Supabase 注册
+    const { data, error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        data: {
+          username: form.username,
+        },
+      },
+    });
+
+    if (error) {
+      setError(error.message);
       return;
     }
 

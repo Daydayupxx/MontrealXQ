@@ -1,16 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { updateProfile } from "../actions/updateProfileAction";
+import { createClient } from "@supabase/supabase-js";
 
 export default function ProfilePage() {
-  const [loading, setLoading] = useState(false);
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
+  const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
+
+  // 获取当前用户数据（只拿 username）
+  useEffect(() => {
+    async function loadUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        setUsername(user.user_metadata?.username || "");
+      }
+    }
+
+    loadUser();
+  }, []);
+
+  // 提交资料
   async function handleSubmit(e: any) {
     e.preventDefault();
     setLoading(true);
 
     const formData = new FormData(e.target);
+
     const result = await updateProfile(formData);
 
     alert(result.message);
@@ -21,22 +43,24 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-pink-200 flex items-center justify-center p-6">
       <div className="bg-white/80 backdrop-blur-xl p-10 rounded-2xl shadow-xl w-full max-w-2xl">
 
+        {/* 用户名显示 */}
+        <div className="flex items-center space-x-6 mb-10">
+          <div>
+            <p className="text-2xl font-bold text-pink-700">{username}</p>
+            <p className="text-gray-500 text-sm">注册时填写的用户名</p>
+          </div>
+        </div>
+
+        {/* 表单 */}
         <h1 className="text-3xl font-bold text-center text-pink-600 mb-10">
           会员资料
         </h1>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
-
-          {/* 名字 */}
           <FieldText label="名字" name="name" placeholder="请输入名字" />
-
-          {/* 性别 */}
           <FieldSelect label="性别" name="gender" options={["男", "女"]} />
-
-          {/* 年龄 */}
           <FieldText label="年龄" type="number" name="age" min={1} max={100} placeholder="28" />
 
-          {/* 生肖 */}
           <FieldSelect
             label="生肖"
             name="zodiac"
@@ -46,7 +70,6 @@ export default function ProfilePage() {
             ]}
           />
 
-          {/* 星座 */}
           <FieldSelect
             label="星座"
             name="constellation"
@@ -56,16 +79,11 @@ export default function ProfilePage() {
             ]}
           />
 
-          {/* 离异 */}
           <FieldSelect label="是否离异" name="divorced" options={["是", "否"]} />
-
-          {/* 带娃 */}
           <FieldSelect label="是否带娃" name="has_child" options={["是", "否"]} />
 
-          {/* 收入 */}
-          <FieldText label="年收入" name="income" placeholder="例如:20万-30万" />
+          <FieldText label="年收入" name="income" placeholder="例如：20万 - 30万" />
 
-          {/* 自我介绍 */}
           <div>
             <label className="block mb-1 font-medium text-pink-700">
               自我介绍
@@ -77,7 +95,6 @@ export default function ProfilePage() {
             ></textarea>
           </div>
 
-          {/* 按钮 */}
           <button
             type="submit"
             disabled={loading}
@@ -85,7 +102,6 @@ export default function ProfilePage() {
           >
             {loading ? "保存中..." : "保存资料"}
           </button>
-
         </form>
       </div>
     </div>
@@ -124,4 +140,3 @@ function FieldSelect({ label, name, options }: any) {
     </div>
   );
 }
-
